@@ -1,6 +1,14 @@
-# Sistema de autómatas C++17 — versión 2, adaptada al diagrama
+# Sistema de autómatas C++17 — versión 3, corrección de compilación en Windows
 
 Implementación completa con clases, getters, setters, consultas booleanas y algoritmos funcionales. Sin librerías externas. El proyecto conserva compatibilidad con los nombres de clases y los archivos de la primera versión.
+
+## Corrección de MSB4006 en Visual Studio
+
+La biblioteca ahora se llama `AutomatasCore`, y el ejecutable sigue siendo `Automatas`. Antes los targets `automatas` y `Automatas` generaban proyectos cuyos nombres colisionaban en Windows, provocando la dependencia circular `ResolveProjectReferences`.
+
+Reemplazá los archivos del proyecto con esta versión y ejecutá el BAT. Este usa `build_windows_v3` para generar proyectos nuevos sin reutilizar la carpeta `build` anterior. No necesitás borrar nada manualmente. El ejecutable del BAT queda en `build_windows_v3/Release/Automatas.exe` con Visual Studio.
+
+La corrección de nombres y rutas se verificó en los archivos; no se ejecutó MSBuild en este entorno Linux.
 
 ## Ejecutar
 
@@ -14,7 +22,7 @@ cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-El ejecutable queda en `build/Release/Automatas.exe` con Visual Studio; con un generador de una configuración queda en `build/Automatas.exe` o `build/Automatas`.
+Con los comandos manuales anteriores, el ejecutable queda en `build/Release/Automatas.exe` con Visual Studio; con un generador de una configuración queda en `build/Automatas.exe` o `build/Automatas`.
 
 Alternativa Linux con GCC, desde la carpeta del proyecto:
 

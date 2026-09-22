@@ -7,16 +7,18 @@ if errorlevel 1 (
  pause
  exit /b 1
 )
-cmake -S . -B build
+rem Directorio nuevo para evitar los proyectos anteriores con nombres en conflicto.
+set "AUTOMATAS_BUILD_DIR=build_windows_v3"
+cmake -S . -B "%AUTOMATAS_BUILD_DIR%"
 if errorlevel 1 goto error
-cmake --build build --config Release
+cmake --build "%AUTOMATAS_BUILD_DIR%" --config Release
 if errorlevel 1 goto error
-ctest --test-dir build -C Release --output-on-failure
+ctest --test-dir "%AUTOMATAS_BUILD_DIR%" -C Release --output-on-failure
 if errorlevel 1 goto error
-if exist "build\Release\Automatas.exe" (
- "build\Release\Automatas.exe"
+if exist "%AUTOMATAS_BUILD_DIR%\Release\Automatas.exe" (
+ "%AUTOMATAS_BUILD_DIR%\Release\Automatas.exe"
 ) else (
- "build\Automatas.exe"
+ "%AUTOMATAS_BUILD_DIR%\Automatas.exe"
 )
 pause
 exit /b 0

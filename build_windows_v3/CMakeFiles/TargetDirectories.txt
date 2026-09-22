@@ -1,0 +1,10 @@
+F:/AutomataLife/build_windows_v3/CMakeFiles/AutomatasCore.dir
+F:/AutomataLife/build_windows_v3/CMakeFiles/Automatas.dir
+F:/AutomataLife/build_windows_v3/CMakeFiles/Experimental.dir
+F:/AutomataLife/build_windows_v3/CMakeFiles/Nightly.dir
+F:/AutomataLife/build_windows_v3/CMakeFiles/Continuous.dir
+F:/AutomataLife/build_windows_v3/CMakeFiles/NightlyMemoryCheck.dir
+F:/AutomataLife/build_windows_v3/CMakeFiles/Pruebas.dir
+F:/AutomataLife/build_windows_v3/CMakeFiles/RUN_TESTS.dir
+F:/AutomataLife/build_windows_v3/CMakeFiles/ALL_BUILD.dir
+F:/AutomataLife/build_windows_v3/CMakeFiles/ZERO_CHECK.dir
