@@ -1,0 +1,23 @@
+cmake_minimum_required(VERSION 3.16)
+project(AutomatasCpp LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+add_library(automatas
+    src/Automata.cpp src/Estado.cpp src/Transicion.cpp src/ConstruirAutomata.cpp src/ConversorAFND.cpp
+    src/AdministradorDeAutomatas.cpp src/MinimizadorAFD.cpp src/TesterEquivalencia.cpp
+    src/InterfazUsuario.cpp src/Main.cpp)
+target_include_directories(automatas PUBLIC include)
+if(MSVC)
+    target_compile_options(automatas PRIVATE /W4 /utf-8)
+else()
+    target_compile_options(automatas PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+add_executable(Automatas src/PuntoEntrada.cpp)
+target_link_libraries(Automatas PRIVATE automatas)
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(Pruebas tests/pruebas.cpp tests/pruebas_api.cpp)
+    target_link_libraries(Pruebas PRIVATE automatas)
+    add_test(NAME pruebas_automatas COMMAND Pruebas)
+endif()

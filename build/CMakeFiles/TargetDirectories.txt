@@ -1,0 +1,10 @@
+F:/AutomataLife/build/CMakeFiles/automatas.dir
+F:/AutomataLife/build/CMakeFiles/Automatas.dir
+F:/AutomataLife/build/CMakeFiles/Experimental.dir
+F:/AutomataLife/build/CMakeFiles/Nightly.dir
+F:/AutomataLife/build/CMakeFiles/Continuous.dir
+F:/AutomataLife/build/CMakeFiles/NightlyMemoryCheck.dir
+F:/AutomataLife/build/CMakeFiles/Pruebas.dir
+F:/AutomataLife/build/CMakeFiles/RUN_TESTS.dir
+F:/AutomataLife/build/CMakeFiles/ALL_BUILD.dir
+F:/AutomataLife/build/CMakeFiles/ZERO_CHECK.dir
