@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<automata>
+    <alfabeto>
+        <simbolo>a</simbolo>
+        <simbolo>b</simbolo>
+    </alfabeto>
+    <estados>
+        <!-- q0 representa cantidad PAR de 'a' (es inicial y final) -->
+        <estado id="q0" inicial="true" final="true"/>
+        <!-- q1 representa cantidad IMPAR de 'a' -->
+        <estado id="q1" inicial="false" final="false"/>
+    </estados>
+    <transiciones>
+        <!-- Transiciones desde q0 (PAR) -->
+        <transicion origen="q0" simbolo="a">
+            <destino>q1</destino>
+        </transicion>
+        <transicion origen="q0" simbolo="b">
+            <destino>q0</destino>
+        </transicion>
+
+        <!-- Transiciones desde q1 (IMPAR) -->
+        <transicion origen="q1" simbolo="a">
+            <destino>q0</destino>
+        </transicion>
+        <transicion origen="q1" simbolo="b">
+            <destino>q1</destino>
+        </transicion>
+    </transiciones>
+</automata>

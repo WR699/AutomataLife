@@ -125,6 +125,23 @@ void pruebasApi() {
     comprobar(leido.getEstadoInicial()->isEstadoInicial());
     comprobar(tester.comparar(leido, asignado).equivalentes);
     std::remove("api_v2.automata");
+
+    // === PRUEBA DE SERIALIZACIÓN Y DESERIALIZACIÓN XML ===
+    archivos.guardarAutomata(asignado, "prueba_xml.xml");
+    auto leidoXml = archivos.cargarAutomata("prueba_xml.xml");
+
+    // Verificaciones de integridad del objeto parseado desde XML
+    comprobar(leidoXml.getAlfabeto() == asignado.getAlfabeto());
+    comprobar(leidoXml.getCantidadEstados() == asignado.getCantidadEstados());
+    comprobar(leidoXml.getEstadoInicial() != nullptr);
+    comprobar(leidoXml.getEstadoInicial()->getId() == asignado.getEstadoInicial()->getId());
+
+    // Verificación de equivalencia semántica entre el autómata original y el recuperado del XML
+    comprobar(tester.comparar(leidoXml, asignado).equivalentes);
+
+    // Limpieza del archivo temporal
+    std::remove("prueba_xml.xml");
+
     InterfazUsuario ui; ui.setAutomata(asignado.clonar());
     std::ostringstream salida; ui.mostrarMenu(salida);
     std::istringstream entrada("5\n11\n6\n8\na\n0\n"); ui.ejecutar(entrada, salida);

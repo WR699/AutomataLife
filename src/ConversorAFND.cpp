@@ -1,25 +1,22 @@
 #include "ConversorAFND.h"
 #include "AlgoritmosInternos.h"
-
-
-bool ConversorAFND::esAFND(const Automata& automata) const noexcept {
-    const auto estados = automata.getEstados();
-
-    for (const Estado* estado : estados) {
-        const auto cantidad_transiciones = estado->getTransiciones().size();
-        if (cantidad_transiciones > automata.getAlfabeto().size()) {
-            return true;
-        }
-    }
-    return false;
-}
-
-
+#include <iostream>
+#include <cstdio>
 
 Automata ConversorAFND::convertir(const Automata& origen,
     const std::set<std::string>& adicional) const {
     origen.validar();
-    auto alfabeto = origen.alfabeto();
+
+    // Verificación de si es AFND o AFD
+    bool esAFND = !origen.esDeterminista();
+    if (esAFND) {
+        std::cout << "[ConversorAFND] El automata de entrada ES un AFND.\n";
+    }
+    else {
+        std::cout << "[ConversorAFND] El automata de entrada NO es un AFND (ya es un AFD).\n";
+    }
+
+    auto alfabeto = origen.getAlfabeto();
     alfabeto.insert(adicional.begin(), adicional.end());
     alfabeto.erase("");
     Automata dfa;
@@ -35,20 +32,21 @@ Automata ConversorAFND::convertir(const Automata& origen,
         dfa.agregarEstado(nombre, detalle::final(origen, conjunto));
         return nombre;
     };
-    dfa.establecerInicial(registrar(detalle::cierre(origen, {origen.inicial()->nombre()})));
+    dfa.setEstadoInicial(registrar(detalle::cierre(origen, { origen.getEstadoInicial()->getId() })));
     for (std::size_t i = 0; i < pendientes.size(); ++i) {
         // Copia: registrar puede realocar pendientes.
         const auto conjunto = pendientes[i];
         const auto nombre = nombres.at(conjunto);
         for (const auto& s : alfabeto) {
             const auto destino = registrar(detalle::mover(origen, conjunto, s));
-            dfa.agregarTransicion(nombre, s, {destino});
+            dfa.agregarTransicion(nombre, s, { destino });
         }
     }
     return dfa;
 }
 
 Automata ConversorAFND::convertirA_AFD(const Automata& a) const { return convertir(a); }
+
 std::set<Estado*> ConversorAFND::clausuraEpsilon(const std::set<Estado*>& estados) const {
     auto cierre = estados;
     std::vector<Estado*> pendientes(estados.begin(), estados.end());
@@ -59,6 +57,7 @@ std::set<Estado*> ConversorAFND::clausuraEpsilon(const std::set<Estado*>& estado
     }
     return cierre;
 }
+
 std::set<Estado*> ConversorAFND::mover(const std::set<Estado*>& estados, const std::string& simbolo) const {
     if (simbolo.empty()) throw std::invalid_argument("Usa clausuraEpsilon para epsilon");
     std::set<Estado*> destinos;

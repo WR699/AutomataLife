@@ -19,6 +19,12 @@
     <ClCompile Include="F:\AutomataLife\src\AdministradorDeAutomatas.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="F:\AutomataLife\src\ParserXmlAutomata.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="F:\AutomataLife\src\tinyxml2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="F:\AutomataLife\src\MinimizadorAFD.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
