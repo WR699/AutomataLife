@@ -1,19 +1,19 @@
-Start testing: Sep 22 17:59 Argentina Standard Time
+Start testing: Sep 22 18:54 Argentina Standard Time
 ----------------------------------------------------------
 1/1 Testing: pruebas_automatas
 1/1 Test: pruebas_automatas
 Command: "F:/AutomataLife/build_windows_v3/Release/Pruebas.exe"
 Directory: F:/AutomataLife/build_windows_v3
-"pruebas_automatas" start time: Sep 22 17:59 Argentina Standard Time
+"pruebas_automatas" start time: Sep 22 18:54 Argentina Standard Time
 Output:
 ----------------------------------------------------------
 OK: punteros, copia, movimiento, AFN, epsilon, AFD, minimizacion, equivalencia, archivos y UI.
 <end of output>
-Test time =   0.08 sec
+Test time =   0.10 sec
 ----------------------------------------------------------
 Test Passed.
-"pruebas_automatas" end time: Sep 22 17:59 Argentina Standard Time
+"pruebas_automatas" end time: Sep 22 18:54 Argentina Standard Time
 "pruebas_automatas" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-End testing: Sep 22 17:59 Argentina Standard Time
+End testing: Sep 22 18:54 Argentina Standard Time

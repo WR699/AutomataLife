@@ -1,2 +1,2 @@
-pruebas_automatas 2 0.039794
+pruebas_automatas 4 0.0247422
 ---

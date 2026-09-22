@@ -1,5 +1,21 @@
 #include "ConversorAFND.h"
 #include "AlgoritmosInternos.h"
+
+
+bool ConversorAFND::esAFND(const Automata& automata) const noexcept {
+    const auto estados = automata.getEstados();
+
+    for (const Estado* estado : estados) {
+        const auto cantidad_transiciones = estado->getTransiciones().size();
+        if (cantidad_transiciones > automata.getAlfabeto().size()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+
 Automata ConversorAFND::convertir(const Automata& origen,
     const std::set<std::string>& adicional) const {
     origen.validar();
