@@ -29,9 +29,8 @@ void InterfazUsuario::mostrar(std::ostream& out) const {
         out << (e.get() == actual_.inicial() ? "-> " : "   ") << std::quoted(e->nombre())
             << (e->esFinal() ? " [FINAL]" : "") << '\n';
         for (const auto& t : e->transiciones()) {
-            out << "     " << (t.esEpsilon() ? "epsilon" : t.simbolo()) << " -> { ";
-            for (const auto* d : t.destinos()) out << std::quoted(d->nombre()) << ' ';
-            out << "}\n";
+            out << "     " << (t.esEpsilon() ? "epsilon" : t.simbolo())
+                << " -> " << std::quoted(t.getDestino()->nombre()) << '\n';
         }
     }
 }
@@ -55,7 +54,8 @@ void InterfazUsuario::ejecutar(std::istream& in, std::ostream& out) {
                 out << "nuevo | ejemplo | mostrar | validar | determinizar | minimizar | salir\n"
                        "estado nombre final(0/1)\ninicial nombre\nfinal nombre 0/1\n"
                        "transicion origen simbolo destino1 destino2 ...\n"
-                       "  Simbolo vacio \"\" = epsilon. Cero destinos permitido.\n"
+                       "  Cada destino se guarda como una transicion individual.\n"
+                       "  Simbolo vacio \"\" = epsilon. Sin destino = salida a SR.\n"
                        "probar simbolo1 simbolo2 ... (sin argumentos = palabra vacia)\n"
                        "guardar ruta | cargar ruta | equivalencia ruta\n"
                        "renombrar id nuevoId | eliminar id | alfabeto simbolos... | cadena texto\n"

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<automata>
+    <alfabeto>
+        <simbolo>a</simbolo>
+        <simbolo>b</simbolo>
+    </alfabeto>
+    <estados>
+        <estado id="q0" inicial="true" final="false"/>
+        <estado id="q1" inicial="false" final="true"/>
+    </estados>
+    <transiciones>
+        <!-- Transición AFND: un origen y un símbolo a varios destinos -->
+        <transicion origen="q0" simbolo="a">
+            <destino>q0</destino>
+            <destino>q1</destino>
+        </transicion>
+        <transicion origen="q0" simbolo="b">
+            <destino>q0</destino>
+        </transicion>
+        <!-- Para transiciones épsilon, usa simbolo="" -->
+    </transiciones>
+</automata>

@@ -232,7 +232,7 @@ try {
     $cmakeVersion = Get-CMakeVersion $cmakeExe
     $cmakeOk = $cmakeVersion -and ($cmakeVersion -ge $MinimumCMake)
     if ($cmakeOk) {
-        Write-Ok "CMake $cmakeVersion: $cmakeExe"
+        Write-Ok "CMake ${cmakeVersion}: $cmakeExe"
     } elseif ($cmakeVersion) {
         Write-Warn "CMake $cmakeVersion es demasiado viejo. Se requiere >= $MinimumCMake."
     } else {
@@ -286,6 +286,11 @@ try {
     Write-Ok "CMake $cmakeVersion"
     Write-Ok "Visual C++: $vcInstall"
     Write-Ok 'Windows SDK listo'
+
+    Write-Step 'Limpiando compilacion anterior'
+    if (Test-Path $BuildDir) {
+        Remove-Item -Recurse -Force $BuildDir
+    }
 
     Write-Step 'Configurando proyecto con CMake'
     Push-Location $ProjectDir

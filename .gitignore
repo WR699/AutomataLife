@@ -1,3 +1,6 @@
 build/
-build_windows_v3/
-build_windows_auto/
+build_*/
+build*/
+*.user
+*.suo
+.vs/
