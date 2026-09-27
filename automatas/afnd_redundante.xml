@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<automata>
+    <alfabeto>
+        <simbolo>a</simbolo>
+        <simbolo>b</simbolo>
+    </alfabeto>
+
+    <estados>
+        <!-- Estado inicial -->
+        <estado id="q0" inicial="true" final="false" />
+
+        <!-- Rama A (Acepta 'a') -->
+        <estado id="qA1" inicial="false" final="false" />
+        <estado id="qA2" inicial="false" final="true" />
+
+        <!-- Rama B (Copia idéntica de la Rama A) -->
+        <estado id="qB1" inicial="false" final="false" />
+        <estado id="qB2" inicial="false" final="true" />
+
+        <!-- Rama C (Otra copia paralela por epsilon) -->
+        <estado id="qC1" inicial="false" final="false" />
+        <estado id="qC2" inicial="false" final="true" />
+    </estados>
+
+    <transiciones>
+        <!-- Transiciones epsilon desde el inicio hacia estructuras gemelas -->
+        <transicion origen="q0" simbolo=""><destino>qA1</destino></transicion>
+        <transicion origen="q0" simbolo=""><destino>qB1</destino></transicion>
+        <transicion origen="q0" simbolo=""><destino>qC1</destino></transicion>
+
+        <!-- Bucles iniciales redundantes -->
+        <transicion origen="qA1" simbolo="a"><destino>qA1</destino></transicion>
+        <transicion origen="qA1" simbolo="b"><destino>qA1</destino></transicion>
+        
+        <transicion origen="qB1" simbolo="a"><destino>qB1</destino></transicion>
+        <transicion origen="qB1" simbolo="b"><destino>qB1</destino></transicion>
+
+        <transicion origen="qC1" simbolo="a"><destino>qC1</destino></transicion>
+        <transicion origen="qC1" simbolo="b"><destino>qC1</destino></transicion>
+
+        <!-- Transiciones de salto a estados finales duplicados -->
+        <transicion origen="qA1" simbolo="a"><destino>qA2</destino></transicion>
+        <transicion origen="qB1" simbolo="a"><destino>qB2</destino></transicion>
+        <transicion origen="qC1" simbolo="a"><destino>qC2</destino></transicion>
+
+        <transicion origen="qA2" simbolo="a"><destino>qA2</destino></transicion>
+        <transicion origen="qA2" simbolo="b"><destino>qA2</destino></transicion>
+        
+        <transicion origen="qB2" simbolo="a"><destino>qB2</destino></transicion>
+        <transicion origen="qB2" simbolo="b"><destino>qB2</destino></transicion>
+
+        <transicion origen="qC2" simbolo="a"><destino>qC2</destino></transicion>
+        <transicion origen="qC2" simbolo="b"><destino>qC2</destino></transicion>
+    </transiciones>
+</automata>

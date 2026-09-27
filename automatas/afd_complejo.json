@@ -1,0 +1,46 @@
+{
+  "alfabeto": ["a", "b"],
+  "estados": [
+    { "id": "q0", "inicial": true, "final": false },
+    { "id": "q1", "inicial": false, "final": false },
+    { "id": "q2", "inicial": false, "final": false },
+    { "id": "q3", "inicial": false, "final": true },
+    { "id": "q4", "inicial": false, "final": true },
+    { "id": "q5", "inicial": false, "final": false },
+    { "id": "q6", "inicial": false, "final": true },
+    { "id": "q7", "inicial": false, "final": false },
+    { "id": "q8", "inicial": false, "final": true },
+    { "id": "q9", "inicial": false, "final": false }
+  ],
+  "transiciones": [
+    { "origen": "q0", "simbolo": "a", "destino": "q1" },
+    { "origen": "q0", "simbolo": "b", "destino": "q2" },
+
+    { "origen": "q1", "simbolo": "a", "destino": "q3" },
+    { "origen": "q1", "simbolo": "b", "destino": "q4" },
+
+    { "origen": "q2", "simbolo": "a", "destino": "q5" },
+    { "origen": "q2", "simbolo": "b", "destino": "q4" },
+
+    { "origen": "q3", "simbolo": "a", "destino": "q3" },
+    { "origen": "q3", "simbolo": "b", "destino": "q6" },
+
+    { "origen": "q4", "simbolo": "a", "destino": "q4" },
+    { "origen": "q4", "simbolo": "b", "destino": "q6" },
+
+    { "origen": "q5", "simbolo": "a", "destino": "q3" },
+    { "origen": "q5", "simbolo": "b", "destino": "q4" },
+
+    { "origen": "q6", "simbolo": "a", "destino": "q3" },
+    { "origen": "q6", "simbolo": "b", "destino": "q4" },
+
+    { "origen": "q7", "simbolo": "a", "destino": "q8" },
+    { "origen": "q7", "simbolo": "b", "destino": "q9" },
+
+    { "origen": "q8", "simbolo": "a", "destino": "q8" },
+    { "origen": "q8", "simbolo": "b", "destino": "q7" },
+
+    { "origen": "q9", "simbolo": "a", "destino": "q7" },
+    { "origen": "q9", "simbolo": "b", "destino": "q8" }
+  ]
+}

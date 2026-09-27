@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<automata>
+    <alfabeto>
+        <simbolo>a</simbolo>
+        <simbolo>b</simbolo>
+    </alfabeto>
+
+    <estados>
+        <estado id="q0" inicial="true" final="false" />
+        <estado id="q1" inicial="false" final="false" />
+        <estado id="q2" inicial="false" final="false" />
+        <estado id="q3" inicial="false" final="false" />
+        <estado id="q4" inicial="false" final="false" />
+        <estado id="q5" inicial="false" final="true" />
+        <estado id="q6" inicial="false" final="true" />
+    </estados>
+
+    <transiciones>
+        <!-- Bucles de entrada con opciones epsilon -->
+        <transicion origen="q0" simbolo="a"><destino>q0</destino></transicion>
+        <transicion origen="q0" simbolo="b"><destino>q0</destino></transicion>
+        
+        <!-- Bifurcación NO DETERMINISTA crucial: antepenúltimo simbolo 'a' -->
+        <transicion origen="q0" simbolo="a"><destino>q1</destino></transicion>
+        
+        <!-- Transicion epsilon que duplica estados equivalentes artificialmente -->
+        <transicion origen="q0" simbolo=""><destino>q2</destino></transicion>
+        <transicion origen="q2" simbolo="a"><destino>q2</destino></transicion>
+        <transicion origen="q2" simbolo="b"><destino>q2</destino></transicion>
+        <transicion origen="q2" simbolo="a"><destino>q3</destino></transicion>
+
+        <!-- Avance en la secuencia (penúltimo y último carácter) -->
+        <transicion origen="q1" simbolo="a"><destino>q4</destino></transicion>
+        <transicion origen="q1" simbolo="b"><destino>q4</destino></transicion>
+        
+        <transicion origen="q3" simbolo="a"><destino>q4</destino></transicion>
+        <transicion origen="q3" simbolo="b"><destino>q4</destino></transicion>
+
+        <transicion origen="q4" simbolo="a"><destino>q5</destino></transicion>
+        <transicion origen="q4" simbolo="b"><destino>q6</destino></transicion>
+    </transiciones>
+</automata>

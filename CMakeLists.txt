@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Se agregan los archivos del parser XML y TinyXML-2 a AutomatasCore
+# Se agregan los archivos del parser XML, JSON y TinyXML-2 a AutomatasCore
 add_library(AutomatasCore
     src/Automata.cpp 
     src/Estado.cpp 
@@ -14,6 +14,7 @@ add_library(AutomatasCore
     src/ConversorAFND.cpp
     src/AdministradorDeAutomatas.cpp 
     src/ParserXmlAutomata.cpp
+    src/ParserJsonAutomata.cpp
     src/tinyxml2.cpp
     src/MinimizadorAFD.cpp 
     src/TesterEquivalencia.cpp
@@ -37,4 +38,11 @@ if(BUILD_TESTING)
     add_executable(Pruebas tests/pruebas.cpp tests/pruebas_api.cpp)
     target_link_libraries(Pruebas PRIVATE AutomatasCore)
     add_test(NAME pruebas_automatas COMMAND Pruebas)
+
+    # Stress grande: se compila siempre, pero el CTest normal ejecuta solo un smoke.
+    # El barrido completo hace 9.999.900.000 comparaciones y se lanza aparte.
+    find_package(Threads REQUIRED)
+    add_executable(PruebasStress200k tests/pruebas_stress_200k.cpp)
+    target_link_libraries(PruebasStress200k PRIVATE AutomatasCore Threads::Threads)
+    add_test(NAME pruebas_stress_smoke COMMAND PruebasStress200k --smoke)
 endif()

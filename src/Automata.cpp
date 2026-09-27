@@ -8,8 +8,8 @@
 
 namespace {
 bool mismaArista(const Transicion& t, const std::string& simbolo, const Estado* destino) {
-    return t.getSimbolo() == simbolo && t.getDestino() == destino;
-}
+        return t.getSimbolo() == simbolo && t.getDestino() == destino;
+    }
 }
 
 void Automata::vincular() noexcept {
@@ -239,8 +239,11 @@ bool Automata::eliminarSimbolo(const std::string& s) {
 Transicion& Automata::agregarAristaInterna(Estado& origen, const std::string& simbolo, Estado* destino) {
     if (!contieneEstado(&origen)) throw std::invalid_argument("Origen ajeno al automata");
     if (!destino || !contieneEstado(destino)) throw std::invalid_argument("Destino ajeno al automata");
-    if (esEstadoError(&origen)) throw std::invalid_argument("Las transiciones de SR son internas");
-    if (esEstadoError(destino)) throw std::invalid_argument("SR es un estado interno y no se usa como destino manual");
+    // CODIGO VIEJO: SR solo podia ser administrado internamente.
+    // if (esEstadoError(&origen)) throw std::invalid_argument("Las transiciones de SR son internas");
+    // if (esEstadoError(destino)) throw std::invalid_argument("SR es un estado interno y no se usa como destino manual");
+
+    // NUEVO: agregarEstadosCompuestos trata SR como un estado normal al copiar aristas.
 
     auto* sr = buscarEstado(ID_ESTADO_ERROR);
 
@@ -280,28 +283,45 @@ Transicion& Automata::agregarAristaInterna(Estado& origen, const std::string& si
 
 void Automata::agregarTransicion(const std::string& o, const std::string& s,
                                  const std::vector<std::string>& ds) {
+
     auto* origen = buscarEstado(o);
-    if (!origen) throw std::invalid_argument("Origen inexistente");
-    if (esEstadoError(origen)) throw std::invalid_argument("SR se administra automaticamente");
+    if (!origen) {throw std::invalid_argument("Origen inexistente");}
+    // CODIGO VIEJO: no permitia usar SR como origen manual.
+    // if (esEstadoError(origen)) {throw std::invalid_argument("SR se administra automaticamente");}
 
     std::vector<Estado*> destinos;
     std::set<Estado*> unicos;
+
     for (const auto& id : ds) {
         auto* d = buscarEstado(id);
-        if (!d) throw std::invalid_argument("Destino inexistente: " + id);
-        if (esEstadoError(d)) throw std::invalid_argument("SR se administra automaticamente");
-        if (unicos.insert(d).second) destinos.push_back(d);
+        if (!d) {throw std::invalid_argument("Destino inexistente: " + id);}
+        // CODIGO VIEJO: no permitia usar SR como destino manual.
+        // if (esEstadoError(d)) {throw std::invalid_argument("SR se administra automaticamente");}
+
+        if (unicos.insert(d).second) {destinos.push_back(d);}
     }
 
-    // Una entrada sin destinos equivale a no definir arista. Si el simbolo es real,
-    // se declara igualmente y el completado agregara simbolo -> SR.
     if (destinos.empty()) {
-        if (!s.empty()) alfabetoDeclarado_.insert(s);
+        if (!s.empty()) {alfabetoDeclarado_.insert(s);}
         completarEstadoError();
         return;
     }
 
-    for (auto* d : destinos) agregarAristaInterna(*origen, s, d);
+    for (auto* destino : destinos) {
+
+        bool yaExiste = false;
+
+        for (const auto& transicion : origen->getTransiciones()) {
+            if (transicion.getSimbolo() == s && transicion.getDestino() == destino) {
+                yaExiste = true;
+                break;
+            }
+        }
+
+        if (!yaExiste) {
+            agregarAristaInterna(*origen, s, destino);
+        }
+    }
 }
 
 void Automata::completarEstadoError() {
@@ -398,6 +418,21 @@ void Automata::setTipo(TipoAutomata t) {
         throw std::invalid_argument("El tipo no coincide con las transiciones; usa ConversorAFND para convertir");
 }
 
+
+std::set<Estado*> Automata::mover(const std::set<Estado*>& estados, const std::string& simbolo) const {
+    if (simbolo.empty()) throw std::invalid_argument("Usa clausuraEpsilon para epsilon");
+    std::set<Estado*> destinos;
+    for (const auto* e : estados) {
+        if (!e) throw std::invalid_argument("Estado nulo en mover");
+        for (const auto& t : e->getTransiciones()) {
+            if (t.getSimbolo() == simbolo && t.getDestino() &&
+                t.getDestino()->getId() != Automata::ID_ESTADO_ERROR)
+                destinos.insert(t.getDestino());
+        }
+    }
+    return destinos;
+}
+
 bool Automata::validarCadena(const std::string& s) const {
     for (const auto& token : getAlfabeto()) {
         if (token.size() != 1)
@@ -458,7 +493,10 @@ Automata Automata::clonar() const {
 
     for (const auto& e : estados_) {
         if (esEstadoError(e.get())) continue;
-        c.agregarEstado(e->getId(), e->esEstadoFinal());
+        // CODIGO VIEJO: el clon copiaba solo el ID interno.
+        // c.agregarEstado(e->getId(), e->esEstadoFinal());
+        auto& copia = c.agregarEstado(e->getId(), e->esEstadoFinal());
+        copia.setNombreVisible(e->getNombreVisible());
     }
     if (inicial_) c.setEstadoInicial(inicial_->getId());
 

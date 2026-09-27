@@ -127,7 +127,9 @@ void pruebasApi() {
     ConversorAFND conversor;
     comprobar(conversor.clausuraEpsilon({p}) == std::set<Estado*>({p, q}));
     q->agregarTransicion(Transicion("a", q));
-    comprobar(conversor.mover({p, q}, "a").count(q) != 0);
+    // CODIGO VIEJO: mover pertenecia a ConversorAFND.
+    // comprobar(conversor.mover({p, q}, "a").count(q) != 0);
+    comprobar(asignado.mover({p, q}, "a").count(q) != 0);
     falla([&]{ conversor.clausuraEpsilon({nullptr}); });
     comprobar(!asignado.esDeterminista()); // epsilon agrega transiciones sobre |Sigma|.
 

@@ -2,13 +2,177 @@
 #include "ConversorAFND.h"
 #include "AlgoritmosInternos.h"
 #include <algorithm>
+#include <iostream>
+#include <map>
+
+namespace {
+Automata renombrarAlfabeto(const Automata& origen, const std::set<std::string>& alfabetoNuevo) {
+    const auto alfabetoViejo = origen.getAlfabeto();
+    if (alfabetoViejo.size() != alfabetoNuevo.size()) {
+        throw std::invalid_argument("Los alfabetos deben tener el mismo tamano para renombrarlos");
+    }
+
+    std::map<std::string, std::string> cambio;
+    auto viejo = alfabetoViejo.begin();
+    auto nuevo = alfabetoNuevo.begin();
+
+    while (viejo != alfabetoViejo.end()) {
+        cambio[*viejo] = *nuevo;
+        ++viejo;
+        ++nuevo;
+    }
+
+    Automata resultado;
+
+    for (const Estado* estado : origen.getEstados()) {
+        if (origen.esEstadoError(estado)) {continue;}
+        resultado.agregarEstado(estado->getId(), estado->esEstadoFinal());
+    }
+
+    resultado.setEstadoInicial(origen.getEstadoInicial()->getId());
+    resultado.setAlfabeto(alfabetoNuevo);
+
+    for (const Estado* estado : origen.getEstados()) {
+        if (origen.esEstadoError(estado)) {continue;}
+
+        for (const auto& transicion : estado->getTransiciones()) {
+            Estado* destino = transicion.getDestino();
+            if (destino == nullptr) {throw std::logic_error("Transicion sin destino al renombrar alfabeto");}
+
+            std::string simbolo = transicion.getSimbolo();
+            if (!transicion.esEpsilon()) {simbolo = cambio.at(simbolo);}
+
+            resultado.agregarTransicion(estado->getId(), simbolo, {destino->getId()});
+        }
+    }
+
+    return resultado;
+}
+}
+
+// CODIGO VIEJO: la comparacion siempre escribia avisos por consola.
+/*
+bool TesterEquivalencia::compararAFDPorIteraciones(const Automata& primero, const Automata& segundo) const;
+*/
+bool TesterEquivalencia::compararAFDPorIteraciones(const Automata& primero, const Automata& segundo,
+                                                    bool mostrarMensajes) const {
+    primero.validar();
+    segundo.validar();
+
+    Automata a = primero.clonar();
+    Automata b = segundo.clonar();
+
+    const auto alfabetoPrimero = a.getAlfabeto();
+    const auto alfabetoSegundo = b.getAlfabeto();
+
+    // CODIGO VIEJO: exigia que ambos alfabetos fueran exactamente iguales.
+    /*
+    const auto alfabeto = primero.getAlfabeto();
+    if (alfabeto != segundo.getAlfabeto()) {
+        throw std::invalid_argument("Los AFD deben tener el mismo alfabeto");
+    }
+    */
+
+    if (alfabetoPrimero.size() != alfabetoSegundo.size()) {
+        throw std::invalid_argument("Los automatas tienen alfabetos de distinto tamano");
+    }
+
+    const bool alfabetosDistintos = alfabetoPrimero != alfabetoSegundo;
+
+    if (alfabetosDistintos) {
+        if (mostrarMensajes) {
+            std::cout << "Los alfabetos tienen el mismo tamano pero son distintos. "
+                      << "Se cambiara el alfabeto del segundo para usar el del primero.\n";
+
+            auto viejo = alfabetoSegundo.begin();
+            auto nuevo = alfabetoPrimero.begin();
+            while (viejo != alfabetoSegundo.end()) {
+                std::cout << "  " << *viejo << " -> " << *nuevo << '\n';
+                ++viejo;
+                ++nuevo;
+            }
+        }
+
+        b = renombrarAlfabeto(b, alfabetoPrimero);
+    }
+
+    // CODIGO VIEJO: si alguno era AFND, el tester terminaba con una excepcion.
+    /*
+    if (!primero.esDeterminista() || !segundo.esDeterminista()) {
+        throw std::invalid_argument("compararAFDPorIteraciones requiere dos AFD");
+    }
+    */
+
+    const bool primeroNoDeterminista = !a.esDeterminista();
+    const bool segundoNoDeterminista = !b.esDeterminista();
+
+    if (primeroNoDeterminista || segundoNoDeterminista) {
+        if (mostrarMensajes) {
+            std::cout << "Como el/los automatas no son deterministas de base, "
+                      << "los convertiremos a deterministas nosotros.\n";
+        }
+
+        ConversorAFND conversor;
+        if (primeroNoDeterminista) {a = conversor.convertirA_AFD(a, alfabetoPrimero);}
+        if (segundoNoDeterminista) {b = conversor.convertirA_AFD(b, alfabetoPrimero);}
+    }
+
+    const auto alfabeto = a.getAlfabeto();
+    using ParEstados = std::pair<std::string, std::string>;
+
+    std::set<ParEstados> paresActuales;
+    std::set<ParEstados> paresVisitados;
+
+    ParEstados inicial{a.getEstadoInicial()->getId(), b.getEstadoInicial()->getId()};
+    paresActuales.insert(inicial);
+    paresVisitados.insert(inicial);
+
+    while (!paresActuales.empty()) {
+        std::set<ParEstados> paresSiguientes;
+
+        for (const auto& par : paresActuales) {
+            const Estado* estadoPrimero = a.buscarEstado(par.first);
+            const Estado* estadoSegundo = b.buscarEstado(par.second);
+
+            if (estadoPrimero == nullptr || estadoSegundo == nullptr) {
+                throw std::logic_error("Estado inexistente durante comparacion por iteraciones");
+            }
+
+            if (estadoPrimero->esEstadoFinal() != estadoSegundo->esEstadoFinal()) {return false;}
+
+            for (const auto& simbolo : alfabeto) {
+                const Estado* destinoPrimero = detalle::siguiente(estadoPrimero, simbolo);
+                const Estado* destinoSegundo = detalle::siguiente(estadoSegundo, simbolo);
+
+                if (destinoPrimero == nullptr || destinoSegundo == nullptr) {
+                    throw std::logic_error("Falta una transicion durante comparacion por iteraciones");
+                }
+
+                ParEstados siguiente{destinoPrimero->getId(), destinoSegundo->getId()};
+
+                // Si el par ya estaba visitado, este camino llego a una situacion conocida.
+                // No repetimos ese par, pero seguimos revisando los otros pares nuevos.
+                if (paresVisitados.insert(siguiente).second) {paresSiguientes.insert(siguiente);}
+            }
+        }
+
+        paresActuales = std::move(paresSiguientes);
+    }
+
+    if (alfabetosDistintos && mostrarMensajes) {
+        std::cout << "Son equivalentes en transiciones, pero para alfabetos distintos.\n";
+    }
+
+    return true;
+}
+
 ResultadoEquivalencia TesterEquivalencia::comparar(const Automata& primero,
                                                       const Automata& segundo) const {
     auto alfabeto = primero.alfabeto();
     auto otro = segundo.alfabeto();
     alfabeto.insert(otro.begin(), otro.end());
-    auto a = ConversorAFND{}.convertir(primero, alfabeto);
-    auto b = ConversorAFND{}.convertir(segundo, alfabeto);
+    auto a = ConversorAFND{}.convertirA_AFD(primero, alfabeto);
+    auto b = ConversorAFND{}.convertirA_AFD(segundo, alfabeto);
     using Par = std::pair<std::string, std::string>;
     struct Paso { Par par; std::size_t padre; std::string simbolo; };
     std::vector<Paso> cola{{{a.inicial()->nombre(), b.inicial()->nombre()}, 0, ""}};

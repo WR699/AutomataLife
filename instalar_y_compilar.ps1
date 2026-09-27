@@ -1,5 +1,6 @@
 param(
-    [switch]$Elevated
+    [switch]$Elevated,
+    [switch]$Stress200k
 )
 
 $ErrorActionPreference = 'Stop'
@@ -221,6 +222,7 @@ function Invoke-ElevatedSelf {
         '-File', "`"$PSCommandPath`"",
         '-Elevated'
     )
+    if ($Stress200k) { $args += '-Stress200k' }
     $process = Start-Process -FilePath 'powershell.exe' -Verb RunAs -ArgumentList $args -Wait -PassThru
     exit $process.ExitCode
 }
@@ -308,18 +310,34 @@ try {
         & $ctestExe --test-dir $BuildDir -C Release --output-on-failure
         if ($LASTEXITCODE -ne 0) { throw "Las pruebas fallaron con codigo $LASTEXITCODE." }
 
-        Write-Step 'Iniciando Automatas.exe'
-        $exeCandidates = @(
-            (Join-Path $BuildDir 'Release\Automatas.exe'),
-            (Join-Path $BuildDir 'Automatas.exe')
-        )
-        $exe = $exeCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
-        if (-not $exe) { throw 'La compilacion termino, pero no se encontro Automatas.exe.' }
+        if ($Stress200k) {
+            Write-Step 'Ejecutando stress configurable'
+            $stressCandidates = @(
+                (Join-Path $BuildDir 'Release\PruebasStress200k.exe'),
+                (Join-Path $BuildDir 'PruebasStress200k.exe')
+            )
+            $stressExe = $stressCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+            if (-not $stressExe) { throw 'No se encontro PruebasStress200k.exe.' }
+            & $stressExe
+            if ($LASTEXITCODE -ne 0) { throw "El stress configurable fallo con codigo $LASTEXITCODE." }
+        }
 
-        Write-Ok "Ejecutable: $exe"
-        & $exe
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warn "Automatas.exe termino con codigo $LASTEXITCODE."
+        if (-not $Stress200k) {
+            Write-Step 'Iniciando Automatas.exe'
+            $exeCandidates = @(
+                (Join-Path $BuildDir 'Release\Automatas.exe'),
+                (Join-Path $BuildDir 'Automatas.exe')
+            )
+            $exe = $exeCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+            if (-not $exe) { throw 'La compilacion termino, pero no se encontro Automatas.exe.' }
+
+            Write-Ok "Ejecutable: $exe"
+            & $exe
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warn "Automatas.exe termino con codigo $LASTEXITCODE."
+            }
+        } else {
+            Write-Ok 'Stress completo terminado correctamente.'
         }
     } finally {
         Pop-Location

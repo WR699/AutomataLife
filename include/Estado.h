@@ -8,8 +8,10 @@ class Automata;
 
 class Estado {
     friend class Automata;
+    friend class ConversorAFND; // Permite reemplazar la tabla sin simplificarla ni recompletar SR.
 
     std::string nombre_;
+    std::string nombreVisible_; // Nombre original para mostrar/guardar; los algoritmos usan nombre_.
     bool inicial_ = false;
     bool final_ = false;
     std::vector<Transicion> transiciones_;
@@ -23,6 +25,9 @@ public:
 
     const std::string& getId() const noexcept;
     void setId(const std::string& id);
+
+    const std::string& getNombreVisible() const noexcept;
+    void setNombreVisible(const std::string& nombre);
 
     bool esEstadoInicial() const noexcept;
     bool isEstadoInicial() const noexcept { return esEstadoInicial(); }

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<automata>
+    <alfabeto>
+        <simbolo>a</simbolo>
+        <simbolo>b</simbolo>
+        <simbolo>c</simbolo>
+    </alfabeto>
+
+    <estados>
+        <estado id="q0" inicial="true" final="false" />
+        <estado id="q1" inicial="false" final="false" />
+        <estado id="q2" inicial="false" final="true" />
+        <estado id="q3" inicial="false" final="false" />
+        <estado id="q4" inicial="false" final="false" />
+        <estado id="q5" inicial="false" final="true" />
+    </estados>
+
+    <transiciones>
+        <!-- q0: Tiene 'a' y 'b', le falta 'c' -->
+        <transicion origen="q0" simbolo="a">
+            <destino>q1</destino>
+        </transicion>
+        <transicion origen="q0" simbolo="b">
+            <destino>q3</destino>
+        </transicion>
+
+        <!-- q1: Solo tiene 'b', le faltan 'a' y 'c' -->
+        <transicion origen="q1" simbolo="b">
+            <destino>q2</destino>
+        </transicion>
+
+        <!-- q2: Le faltan 'a', 'b' y 'c' (Estado "muerto" o pozo sin salidas manuales) -->
+
+        <!-- q3: Solo tiene 'c', le faltan 'a' y 'b' -->
+        <transicion origen="q3" simbolo="c">
+            <destino>q4</destino>
+        </transicion>
+
+        <!-- q4: Tiene 'a' que va a dos destinos (AFND) y 'b', le falta 'c' -->
+        <transicion origen="q4" simbolo="a">
+            <destino>q4</destino>
+            <destino>q5</destino>
+        </transicion>
+        <transicion origen="q4" simbolo="b">
+            <destino>q1</destino>
+        </transicion>
+
+        <!-- q5: Solo tiene 'a', le faltan 'b' y 'c' -->
+        <transicion origen="q5" simbolo="a">
+            <destino>q5</destino>
+        </transicion>
+    </transiciones>
+</automata>

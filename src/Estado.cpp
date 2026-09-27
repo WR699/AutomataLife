@@ -6,11 +6,17 @@
 Estado::Estado(std::string id, bool f) : Estado(std::move(id), false, f) {}
 
 Estado::Estado(std::string id, bool i, bool f)
-    : nombre_(std::move(id)), inicial_(i), final_(f) {
+    : nombre_(std::move(id)), nombreVisible_(nombre_), inicial_(i), final_(f) {
     if (nombre_.empty()) throw std::invalid_argument("Id vacio");
 }
 
 const std::string& Estado::getId() const noexcept { return nombre_; }
+const std::string& Estado::getNombreVisible() const noexcept { return nombreVisible_; }
+
+void Estado::setNombreVisible(const std::string& nombre) {
+    if (nombre.empty()) throw std::invalid_argument("Nombre visible vacio");
+    nombreVisible_ = nombre;
+}
 
 void Estado::setId(const std::string& id) {
     if (id.empty()) throw std::invalid_argument("Id vacio");
@@ -22,6 +28,7 @@ void Estado::setId(const std::string& id) {
         auto* otro = propietario_->buscarEstado(id);
         if (otro && otro != this) throw std::invalid_argument("Id duplicado: " + id);
     }
+    if (nombreVisible_ == nombre_) nombreVisible_ = id;
     nombre_ = id;
 }
 

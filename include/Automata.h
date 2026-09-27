@@ -9,6 +9,7 @@
 class Automata {
     friend class Estado;
     friend class Transicion;
+    friend class ConversorAFND; // Solo para reemplazar tablas ya calculadas sin volver a normalizarlas.
 
     std::vector<std::unique_ptr<Estado>> estados_;
     Estado* inicial_ = nullptr;
@@ -47,6 +48,9 @@ public:
     void setAlfabeto(const std::set<std::string>& alfabeto);
     void agregarSimbolo(const std::string& simbolo);
     bool eliminarSimbolo(const std::string& simbolo);
+
+    // Devuelve los estados alcanzables desde un conjunto leyendo un simbolo.
+    std::set<Estado*> mover(const std::set<Estado*>& estados, const std::string& simbolo) const;
 
     // Materializa el estado sumidero SR y completa todo simbolo faltante con -> SR.
     // Tambien elimina fallbacks -> SR cuando ya existe una transicion real para ese simbolo.

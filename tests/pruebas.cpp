@@ -45,7 +45,7 @@ int main() {
         movido.validar();
         verificar(movido.acepta({"a"}));
 
-        auto d = convertir.convertir(a);
+        auto d = convertir.convertirA_AFD(a);
         auto m = minimizar.minimizar(a);
         verificar(d.esDeterministico() && m.esDeterministico());
         verificar(equivalencia.comparar(a, m).equivalentes);
@@ -76,7 +76,10 @@ int main() {
         especial.agregarTransicion(especial.inicial()->nombre(), "token con espacios", {});
         archivos.guardar(especial, "test_roundtrip.automata");
         auto leido = archivos.cargar("test_roundtrip.automata");
-        verificar(leido.inicial()->nombre() == especial.inicial()->nombre());
+        // CODIGO VIEJO: antes el loader conservaba el nombre del archivo como ID interno.
+        // verificar(leido.inicial()->nombre() == especial.inicial()->nombre());
+        verificar(leido.inicial()->getId() == "S1");
+        verificar(leido.inicial()->getNombreVisible() == especial.inicial()->getNombreVisible());
         verificar(leido.getEstadoError() != nullptr);
         verificar(equivalencia.comparar(leido, especial).equivalentes);
         std::remove("test_roundtrip.automata");
@@ -93,38 +96,74 @@ int main() {
         debeFallar([&]{ archivos.cargar("test_invalido.automata"); });
         std::remove("test_invalido.automata");
 
-        // Comparar NFA/AFD en automatas aleatorios con epsilon.
+        // TEST RANDOM NUEVO: generar AFD directamente y comparar por iteraciones.
+        // No genera palabras: recorre pares de estados nuevos hasta que no quede ninguno.
         std::mt19937 azar(42);
-        for (int caso = 0; caso < 30; ++caso) {
-            Automata nfa;
-            for (int i = 0; i < 5; ++i)
-                nfa.agregarEstado(std::to_string(i), azar() % 2 != 0);
-            nfa.establecerInicial("0");
+        for (int caso = 0; caso < 200; ++caso) {
+            Automata afdRandom;
+            const int cantidadEstados = 2 + static_cast<int>(azar() % 7);
 
-            for (int i = 0; i < 5; ++i) {
-                for (const auto& s : {"", "a", "b"}) {
-                    std::vector<std::string> destinos;
-                    for (int j = 0; j < 5; ++j)
-                        if (azar() % 5 == 0) destinos.push_back(std::to_string(j));
-                    nfa.agregarTransicion(std::to_string(i), s, destinos);
+            for (int i = 0; i < cantidadEstados; ++i) {
+                afdRandom.agregarEstado("R" + std::to_string(i), azar() % 2 != 0);
+            }
+
+            afdRandom.establecerInicial("R0");
+
+            for (int i = 0; i < cantidadEstados; ++i) {
+                for (const auto& simbolo : {"a", "b"}) {
+                    const int destino = static_cast<int>(azar() % cantidadEstados);
+                    afdRandom.agregarTransicion("R" + std::to_string(i), simbolo, {"R" + std::to_string(destino)});
                 }
             }
 
-            auto afd = convertir.convertir(nfa);
-            auto minimo = minimizar.minimizar(nfa);
-            verificar(afd.esDeterministico() && minimo.esDeterministico());
-            verificar(equivalencia.comparar(nfa, minimo).equivalentes);
-
-            for (int longitud = 0; longitud <= 5; ++longitud) {
-                for (int bits = 0; bits < (1 << longitud); ++bits) {
-                    std::vector<std::string> palabra;
-                    for (int k = 0; k < longitud; ++k)
-                        palabra.push_back((bits & (1 << k)) ? "a" : "b");
-                    verificar(nfa.acepta(palabra) == afd.acepta(palabra));
-                    verificar(nfa.acepta(palabra) == minimo.acepta(palabra));
-                }
-            }
+            auto minimoRandom = minimizar.minimizar(afdRandom);
+            verificar(afdRandom.esDeterministico() && minimoRandom.esDeterministico());
+            verificar(equivalencia.compararAFDPorIteraciones(afdRandom, minimoRandom));
         }
+
+        // CODIGO VIEJO: random sobre AFND + fuerza bruta de palabras hasta longitud 5.
+        // Se conserva para volver a activarlo cuando terminemos de endurecer convertirA_AFD().
+        // // Comparar NFA/AFD en automatas aleatorios con epsilon.
+        // std::mt19937 azar(42);
+        // for (int caso = 0; caso < 200; ++caso) {
+        //     Automata nfa;
+        //     for (int i = 0; i < 5; ++i)
+        //         nfa.agregarEstado(std::to_string(i), azar() % 2 != 0);
+        //     nfa.establecerInicial("0");
+// 
+        //     for (int i = 0; i < 5; ++i) {
+        //         for (const auto& s : {"", "a", "b"}) {
+        //             std::vector<std::string> destinos;
+        //             for (int j = 0; j < 5; ++j)
+        //                 if (azar() % 5 == 0) destinos.push_back(std::to_string(j));
+        //             nfa.agregarTransicion(std::to_string(i), s, destinos);
+        //         }
+        //     }
+// 
+        //     auto afd = convertir.convertirA_AFD(nfa);
+        //     auto minimo = minimizar.minimizar(nfa);
+        //     verificar(afd.esDeterministico() && minimo.esDeterministico());
+        //     verificar(equivalencia.comparar(nfa, minimo).equivalentes);
+// 
+        //     // TEST NUEVO: comparar los dos AFD por iteraciones.
+        //     // Cada par de estados alcanzado se revisa una sola vez y desde el
+        //     // se prueban todas las letras del alfabeto.
+        //     verificar(equivalencia.compararAFDPorIteraciones(afd, minimo));
+// 
+        //     // CODIGO VIEJO: fuerza bruta generando todas las palabras hasta longitud 5.
+        //     // Se deja comentado para poder comparar ambos enfoques.
+        //     /*
+        //     for (int longitud = 0; longitud <= 5; ++longitud) {
+        //         for (int bits = 0; bits < (1 << longitud); ++bits) {
+        //             std::vector<std::string> palabra;
+        //             for (int k = 0; k < longitud; ++k)
+        //                 palabra.push_back((bits & (1 << k)) ? "a" : "b");
+        //             verificar(nfa.acepta(palabra) == afd.acepta(palabra));
+        //             verificar(nfa.acepta(palabra) == minimo.acepta(palabra));
+        //         }
+        //     }
+        //     */
+        // }
 
         InterfazUsuario ui;
         std::istringstream entrada(

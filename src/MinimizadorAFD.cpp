@@ -7,44 +7,71 @@
 Automata MinimizadorAFD::minimizar(const Automata& origen) const {
     auto accesible = eliminarEstadosInaccesibles(origen);
     auto dfa = ConversorAFND{}.convertirA_AFD(accesible);
+
+    // CODIGO VIEJO: se particionaba inmediatamente despues de convertir.
+    // const auto grupos = particionarEstados(dfa);
+
+    // La determinizacion puede volver inaccesibles estados que antes eran alcanzables
+    // por transiciones multiples. Quitarlos ahora evita procesarlos en las particiones.
+    dfa = eliminarEstadosInaccesibles(dfa);
     const auto grupos = particionarEstados(dfa);
 
     std::map<const Estado*, std::string> nombres;
     Automata minimo;
     minimo.setAlfabeto(dfa.getAlfabeto());
 
+    const auto* inicial = dfa.getEstadoInicial();
     std::size_t indiceNombre = 0;
     for (const auto& grupo : grupos) {
-        // SR se regenera automaticamente. No crear un estado M para el bloque formado solo por SR.
+        // CODIGO VIEJO: SR solo prevalecia si era el unico estado del grupo.
+        /*
         if (grupo.size() == 1 && dfa.esEstadoError(*grupo.begin())) {
             nombres[*grupo.begin()] = Automata::ID_ESTADO_ERROR;
+            continue;
+        }
+        */
+
+        bool contieneSR = false;
+        bool contieneInicial = false;
+        for (const auto* e : grupo) {
+            if (dfa.esEstadoError(e)) {contieneSR = true;}
+            if (e == inicial) {contieneInicial = true;}
+        }
+
+        // Si SR es equivalente a otros estados, SR prevalece y representa a todo el grupo.
+        // Excepcion: SR nunca puede ser inicial. Si el inicial es equivalente a SR,
+        // necesitamos conservar un estado de usuario como representante del grupo.
+        if (contieneSR && !contieneInicial) {
+            for (const auto* e : grupo) nombres[e] = Automata::ID_ESTADO_ERROR;
             continue;
         }
 
         const auto nombre = "M" + std::to_string(indiceNombre++);
         bool esFinal = false;
-        for (const auto* e : grupo) if (e->esEstadoFinal()) { esFinal = true; break; }
+        for (const auto* e : grupo) if (e->esEstadoFinal()) {esFinal = true; break;}
         minimo.agregarEstado(nombre, esFinal);
         for (const auto* e : grupo) nombres[e] = nombre;
     }
 
-    const auto* inicial = dfa.getEstadoInicial();
     if (dfa.esEstadoError(inicial))
         throw std::logic_error("SR no puede ser inicial");
     minimo.setEstadoInicial(nombres.at(inicial));
 
     for (const auto& grupo : grupos) {
         const auto* representante = *grupo.begin();
-        if (dfa.esEstadoError(representante)) continue;
-
         const auto& origenNombre = nombres.at(representante);
+
+        // Si todo el grupo fue absorbido por SR, sus bucles los administra SR internamente.
+        if (origenNombre == Automata::ID_ESTADO_ERROR) {continue;}
+
         for (const auto& simbolo : dfa.getAlfabeto()) {
             const auto* dest = detalle::siguiente(representante, simbolo);
-            if (dfa.esEstadoError(dest)) {
-                // No se agrega manualmente: el completado de minimo ya crea -> SR si falta.
-                continue;
-            }
-            minimo.agregarTransicion(origenNombre, simbolo, {nombres.at(dest)});
+            const auto& destinoNombre = nombres.at(dest);
+
+            // Si el grupo destino fue absorbido por SR, completarEstadoError() agrega el fallback.
+            if (destinoNombre == Automata::ID_ESTADO_ERROR) {continue;}
+
+            minimo.agregarTransicion(origenNombre, simbolo, {destinoNombre});
         }
     }
 
@@ -127,8 +154,12 @@ Automata MinimizadorAFD::eliminarEstadosInaccesibles(const Automata& a) const {
 
     for (const auto& e : a.estados()) {
         if (a.esEstadoError(e.get())) continue; // SR se regenera
-        if (visitados.count(e.get()))
-            resultado.agregarEstado(e->getId(), e->esEstadoFinal());
+        if (visitados.count(e.get())) {
+            // CODIGO VIEJO: se copiaba solo el ID interno.
+            // resultado.agregarEstado(e->getId(), e->esEstadoFinal());
+            auto& copiaEstado = resultado.agregarEstado(e->getId(), e->esEstadoFinal());
+            copiaEstado.setNombreVisible(e->getNombreVisible());
+        }
     }
 
     resultado.setEstadoInicial(a.getEstadoInicial()->getId());
