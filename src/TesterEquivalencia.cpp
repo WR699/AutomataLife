@@ -72,17 +72,42 @@ bool TesterEquivalencia::compararAFDPorIteraciones(const Automata& primero, cons
         throw std::invalid_argument("Los AFD deben tener el mismo alfabeto");
     }
     */
-
+    /*
     if (alfabetoPrimero.size() != alfabetoSegundo.size()) {
         throw std::invalid_argument("Los automatas tienen alfabetos de distinto tamano");
     }
+    */
 
     const bool alfabetosDistintos = alfabetoPrimero != alfabetoSegundo;
+    const bool mismoTamano = alfabetoPrimero.size() == alfabetoSegundo.size();
 
-    if (alfabetosDistintos) {
+    const bool primeroContenidoEnSegundo =
+    std::includes(alfabetoSegundo.begin(), alfabetoSegundo.end(),
+                  alfabetoPrimero.begin(), alfabetoPrimero.end());
+
+    const bool segundoContenidoEnPrimero =
+    std::includes(alfabetoPrimero.begin(), alfabetoPrimero.end(),
+                  alfabetoSegundo.begin(), alfabetoSegundo.end());
+
+    const bool unoContieneAlOtro = primeroContenidoEnSegundo || segundoContenidoEnPrimero;
+    const bool equivalenciaLogica = alfabetosDistintos && mismoTamano;
+
+    if (alfabetosDistintos && !mismoTamano && !unoContieneAlOtro) {
+        throw std::invalid_argument(
+            "Los automatas tienen alfabetos incompatibles: distinto tamano y distintos simbolos"
+        );
+    }
+
+    std::set<std::string> alfabetoComparacion = alfabetoPrimero;
+
+    if (alfabetosDistintos && unoContieneAlOtro && !mismoTamano) {
+        alfabetoComparacion.insert(alfabetoSegundo.begin(), alfabetoSegundo.end());
+    }
+
+    if (equivalenciaLogica) {
         if (mostrarMensajes) {
             std::cout << "Los alfabetos tienen el mismo tamano pero son distintos. "
-                      << "Se cambiara el alfabeto del segundo para usar el del primero.\n";
+                      << "Se buscara equivalencia logica a pesar del distinto alfabeto.\n";
 
             auto viejo = alfabetoSegundo.begin();
             auto nuevo = alfabetoPrimero.begin();
@@ -105,19 +130,27 @@ bool TesterEquivalencia::compararAFDPorIteraciones(const Automata& primero, cons
 
     const bool primeroNoDeterminista = !a.esDeterminista();
     const bool segundoNoDeterminista = !b.esDeterminista();
+    const bool hayQueCompletarAlfabeto =
+    alfabetosDistintos && unoContieneAlOtro && !mismoTamano;
 
-    if (primeroNoDeterminista || segundoNoDeterminista) {
-        if (mostrarMensajes) {
+    if (primeroNoDeterminista || segundoNoDeterminista || hayQueCompletarAlfabeto) {
+    if ((primeroNoDeterminista || segundoNoDeterminista) && mostrarMensajes) {
             std::cout << "Como el/los automatas no son deterministas de base, "
-                      << "los convertiremos a deterministas nosotros.\n";
-        }
-
-        ConversorAFND conversor;
-        if (primeroNoDeterminista) {a = conversor.convertirA_AFD(a, alfabetoPrimero);}
-        if (segundoNoDeterminista) {b = conversor.convertirA_AFD(b, alfabetoPrimero);}
+                    << "los convertiremos a deterministas nosotros.\n";
     }
 
-    const auto alfabeto = a.getAlfabeto();
+    ConversorAFND conversor;
+
+    if (primeroNoDeterminista || hayQueCompletarAlfabeto) {
+        a = conversor.convertirA_AFD(a, alfabetoComparacion);
+    }
+
+    if (segundoNoDeterminista || hayQueCompletarAlfabeto) {
+            b = conversor.convertirA_AFD(b, alfabetoComparacion);
+        }
+    }
+
+    const auto alfabeto = alfabetoComparacion;
     using ParEstados = std::pair<std::string, std::string>;
 
     std::set<ParEstados> paresActuales;
@@ -159,8 +192,11 @@ bool TesterEquivalencia::compararAFDPorIteraciones(const Automata& primero, cons
         paresActuales = std::move(paresSiguientes);
     }
 
-    if (alfabetosDistintos && mostrarMensajes) {
-        std::cout << "Son equivalentes en transiciones, pero para alfabetos distintos.\n";
+    if (equivalenciaLogica && mostrarMensajes) {
+        std::cout << "Son logicamente equivalentes bajo renombrado del alfabeto.\n";
+    }
+    else if (alfabetosDistintos && unoContieneAlOtro && mostrarMensajes) {
+        std::cout << "Son equivalentes aunque uno de los alfabetos contiene simbolos adicionales.\n";
     }
 
     return true;
