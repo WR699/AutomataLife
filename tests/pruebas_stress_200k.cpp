@@ -34,6 +34,8 @@ struct DetallePares {
     std::uint64_t mismoAlfabetoConAFND = 0;
     std::uint64_t distintoAlfabetoSoloAFD = 0;
     std::uint64_t distintoAlfabetoConAFND = 0;
+    std::uint64_t distintoTamanoCompatibleSoloAFD = 0;
+    std::uint64_t distintoTamanoCompatibleConAFND = 0;
     std::uint64_t alfabetoIncompatibleSoloAFD = 0;
     std::uint64_t alfabetoIncompatibleConAFND = 0;
 };
@@ -46,10 +48,20 @@ struct Conteo {
     DetallePares detalle;
 };
 
-void registrarDetalle(Conteo& conteo, bool mismoAlfabeto, bool mismoTamanoAlfabeto, bool hayAFND) {
+// CODIGO VIEJO: todo par con distinto tamano se contaba como incompatible.
+/*
+void registrarDetalle(Conteo& conteo, bool mismoAlfabeto, bool mismoTamanoAlfabeto, bool hayAFND);
+*/
+void registrarDetalle(Conteo& conteo, bool mismoAlfabeto, bool mismoTamanoAlfabeto,
+                       bool unoContieneAlOtro, bool hayAFND) {
     if (!mismoTamanoAlfabeto) {
-        if (hayAFND) {++conteo.detalle.alfabetoIncompatibleConAFND;}
-        else {++conteo.detalle.alfabetoIncompatibleSoloAFD;}
+        if (unoContieneAlOtro) {
+            if (hayAFND) {++conteo.detalle.distintoTamanoCompatibleConAFND;}
+            else {++conteo.detalle.distintoTamanoCompatibleSoloAFD;}
+        } else {
+            if (hayAFND) {++conteo.detalle.alfabetoIncompatibleConAFND;}
+            else {++conteo.detalle.alfabetoIncompatibleSoloAFD;}
+        }
         return;
     }
 
@@ -68,6 +80,8 @@ void sumarDetalle(DetallePares& destino, const DetallePares& origen) {
     destino.mismoAlfabetoConAFND += origen.mismoAlfabetoConAFND;
     destino.distintoAlfabetoSoloAFD += origen.distintoAlfabetoSoloAFD;
     destino.distintoAlfabetoConAFND += origen.distintoAlfabetoConAFND;
+    destino.distintoTamanoCompatibleSoloAFD += origen.distintoTamanoCompatibleSoloAFD;
+    destino.distintoTamanoCompatibleConAFND += origen.distintoTamanoCompatibleConAFND;
     destino.alfabetoIncompatibleSoloAFD += origen.alfabetoIncompatibleSoloAFD;
     destino.alfabetoIncompatibleConAFND += origen.alfabetoIncompatibleConAFND;
 }
@@ -75,6 +89,7 @@ void sumarDetalle(DetallePares& destino, const DetallePares& origen) {
 std::uint64_t totalDetalle(const DetallePares& detalle) {
     return detalle.mismoAlfabetoSoloAFD + detalle.mismoAlfabetoConAFND +
            detalle.distintoAlfabetoSoloAFD + detalle.distintoAlfabetoConAFND +
+           detalle.distintoTamanoCompatibleSoloAFD + detalle.distintoTamanoCompatibleConAFND +
            detalle.alfabetoIncompatibleSoloAFD + detalle.alfabetoIncompatibleConAFND;
 }
 
@@ -88,20 +103,46 @@ std::uint64_t pares(std::uint64_t cantidad) {
     return cantidad * (cantidad - 1) / 2;
 }
 
+// CODIGO VIEJO: los 20 automatas fijos estaban armados como 10 pares aislados.
+/*
+constexpr std::uint64_t CANTIDAD_PARES_FIJOS_DISTINTO_TAMANO = 10;
+constexpr std::uint64_t CANTIDAD_AUTOMATAS_FIJOS_DISTINTO_TAMANO = 20;
+*/
+constexpr std::uint64_t CANTIDAD_TAMANOS_FIJOS = 10;
+constexpr std::uint64_t CANTIDAD_AUTOMATAS_FIJOS_DISTINTO_TAMANO = 20;
+constexpr std::uint64_t CANTIDAD_COMPARACIONES_FIJAS = 190; // C(20,2)
+
 std::uint64_t comparacionesTotalesParaGrupo(std::uint64_t cantidadPorGrupo) {
     // Se comparan todos contra todos dentro de los dos grupos principales:
     // C(N,2) no equivalentes + C(N,2) equivalentes = N * (N - 1).
-    return cantidadPorGrupo * (cantidadPorGrupo - 1);
+    // CODIGO VIEJO: antes se agregaban solamente 10 comparaciones fijas.
+    /*
+    return cantidadPorGrupo * (cantidadPorGrupo - 1) + CANTIDAD_PARES_FIJOS_DISTINTO_TAMANO;
+    */
+    // Ahora hay 20 automatas fijos equivalentes y se comparan todos contra todos: C(20,2)=190.
+    return cantidadPorGrupo * (cantidadPorGrupo - 1) + CANTIDAD_COMPARACIONES_FIJAS;
 }
 
 ConfiguracionStress configurarDesdeMaximo(std::uint64_t maximoComparaciones) {
-    if (maximoComparaciones < 56) {
-        throw std::invalid_argument("El maximo debe permitir al menos 8 automatas por grupo (56 comparaciones)");
+    // CODIGO VIEJO: 56 dinamicas + 10 pares fijos = 66.
+    /*
+    if (maximoComparaciones < 66) {
+        throw std::invalid_argument("El maximo debe permitir 56 comparaciones dinamicas + 10 pares fijos (66 comparaciones)");
+    }
+    */
+    if (maximoComparaciones < 246) {
+        throw std::invalid_argument("El maximo debe permitir 56 comparaciones dinamicas + 190 comparaciones fijas (246 comparaciones)");
     }
 
     // Los dos grupos principales tienen la misma cantidad N. N debe ser multiplo de 8:
     // no equivalentes -> 4 alfabetos -> mitad AFD/AFND; equivalentes -> 2 alfabetos -> mitad AFD/AFND.
-    long double raiz = std::sqrt(1.0L + 4.0L * static_cast<long double>(maximoComparaciones));
+    // CODIGO VIEJO: se reservaban solamente 10 comparaciones fijas.
+    /*
+    const std::uint64_t maximoDinamico = maximoComparaciones - CANTIDAD_PARES_FIJOS_DISTINTO_TAMANO;
+    */
+    // Reservamos las 190 comparaciones entre los 20 fijos para no superar el maximo pedido.
+    const std::uint64_t maximoDinamico = maximoComparaciones - CANTIDAD_COMPARACIONES_FIJAS;
+    long double raiz = std::sqrt(1.0L + 4.0L * static_cast<long double>(maximoDinamico));
     std::uint64_t cantidadPorGrupo = static_cast<std::uint64_t>((1.0L + raiz) / 2.0L);
     cantidadPorGrupo -= cantidadPorGrupo % 8;
 
@@ -372,7 +413,13 @@ CasoNoEquivalente generarNoEquivalente(std::uint32_t indice, const Configuracion
     const std::uint32_t rangoLenguaje = (grupo - 2) * n + local;
     const auto codigo = static_cast<std::uint32_t>(
         permutarSemilla(rangoLenguaje, 27, 0x13579BULL));
+
+    // CODIGO VIEJO: abc estaba contenido en abcd, asi que con la nueva regla
+    // de compatibilidad por inclusion ya no correspondia esperar error 4-vs-3.
+    /*
     const std::string alfabeto = grupo == 2 ? "abc" : "def";
+    */
+    const std::string alfabeto = grupo == 2 ? "ijk" : "lmn";
     return {generarLenguajeLongitud3(alfabeto, codigo, afnd), alfabeto, 3, afnd};
 }
 
@@ -391,6 +438,75 @@ CasoEquivalente generarCasoEquivalente(std::uint32_t indice, const Configuracion
     // sigan siendo unicos aun despues de renombrar ghijkl -> abcdef.
     const auto variante = permutarSemilla(indice, 22, 0x2A55AAULL);
     return {generarEquivalente(alfabeto, variante, afnd), alfabeto, afnd};
+}
+
+bool alfabetoContiene(const std::string& contenedor, const std::string& contenido) {
+    for (char simbolo : contenido) {
+        if (contenedor.find(simbolo) == std::string::npos) {return false;}
+    }
+    return true;
+}
+
+// Crea un automata que acepta exactamente la palabra de un simbolo "a".
+// Los simbolos extra existen en el alfabeto pero siempre terminan en rechazo.
+// Por eso dos automatas de esta familia pueden tener alfabetos de distinto
+// tamano y seguir reconociendo exactamente el mismo lenguaje.
+Automata generarEquivalenteFijoTamanoVariable(const std::string& textoAlfabeto, bool hacerloAFND) {
+    const auto alfabeto = simbolos(textoAlfabeto);
+    if (alfabeto.empty()) throw std::logic_error("El alfabeto fijo no puede estar vacio");
+
+    Automata a;
+    a.setAlfabeto(std::set<std::string>(alfabeto.begin(), alfabeto.end()));
+    a.agregarEstado("Q0");
+    a.agregarEstado("F", true);
+    a.agregarEstado("N");
+    a.setEstadoInicial("Q0");
+
+    a.agregarTransicion("Q0", alfabeto[0], {"F"});
+    for (std::size_t i = 1; i < alfabeto.size(); ++i) a.agregarTransicion("Q0", alfabeto[i], {"N"});
+    agregarTransicionesAFD(a, "F", alfabeto, std::vector<std::string>(alfabeto.size(), "N"));
+    agregarTransicionesAFD(a, "N", alfabeto, std::vector<std::string>(alfabeto.size(), "N"));
+
+    if (hacerloAFND) a.agregarTransicion("Q0", "", {"Q0"});
+    return a;
+}
+
+// CODIGO VIEJO: los 20 fijos se generaban como 10 pares 4<->5, 5<->6, ..., 13<->14.
+/*
+std::pair<CasoEquivalente, CasoEquivalente> generarParFijoEquivalenteDistintoTamano(std::uint32_t indice) {
+    if (indice >= CANTIDAD_PARES_FIJOS_DISTINTO_TAMANO) {
+        throw std::out_of_range("Indice de par fijo fuera de rango");
+    }
+
+    const std::string universo = "abcdefghijklmn";
+    const std::size_t tamanoMenor = 4 + indice;
+    const std::size_t tamanoMayor = tamanoMenor + 1;
+    const std::string alfabetoMenor = universo.substr(0, tamanoMenor);
+    const std::string alfabetoMayor = universo.substr(0, tamanoMayor);
+
+    const bool menorAFND = indice % 2 != 0;
+    const bool mayorAFND = !menorAFND;
+
+    CasoEquivalente menor{generarEquivalenteFijoTamanoVariable(alfabetoMenor, menorAFND),
+                           alfabetoMenor, menorAFND};
+    CasoEquivalente mayor{generarEquivalenteFijoTamanoVariable(alfabetoMayor, mayorAFND),
+                           alfabetoMayor, mayorAFND};
+    return {std::move(menor), std::move(mayor)};
+}
+*/
+CasoEquivalente generarCasoFijoEquivalente(std::uint32_t indice) {
+    if (indice >= CANTIDAD_AUTOMATAS_FIJOS_DISTINTO_TAMANO) {
+        throw std::out_of_range("Indice de automata fijo fuera de rango");
+    }
+
+    // Exactamente 20 automatas: para cada tamano 4..13 hay un AFD y un AFND.
+    // 10 tamanos * 2 automatas = 20. Todos aceptan solamente la palabra "a".
+    const std::string universo = "abcdefghijklmn";
+    const std::size_t tamano = 4 + indice / 2;
+    const bool afnd = indice % 2 != 0;
+    const std::string alfabeto = universo.substr(0, tamano);
+
+    return {generarEquivalenteFijoTamanoVariable(alfabeto, afnd), alfabeto, afnd};
 }
 
 void registrarError(std::atomic<bool>& detener, std::mutex& mutexError, std::string& error,
@@ -442,7 +558,7 @@ ResultadoParalelo comprobarEquivalentes(const ConfiguracionStress& config, Progr
                         break;
                     }
                     ++conteo.equivalentes;
-                    registrarDetalle(conteo, mismoAlfabeto, true, hayAFND);
+                    registrarDetalle(conteo, mismoAlfabeto, true, true, hayAFND);
                 }
             }
             if (pendientesProgreso > 0) progreso.agregar(pendientesProgreso);
@@ -460,6 +576,70 @@ ResultadoParalelo comprobarEquivalentes(const ConfiguracionStress& config, Progr
         resultado.conteo.noEquivalentes += local.noEquivalentes;
         resultado.conteo.alfabetosIncompatibles += local.alfabetosIncompatibles;
         sumarDetalle(resultado.conteo.detalle, local.detalle);
+    }
+
+    // CODIGO VIEJO: los 20 fijos se probaban solo como 10 pares aislados.
+    /*
+    if (resultado.correcto) {
+        TesterEquivalencia tester;
+        for (std::uint32_t i = 0; i < CANTIDAD_PARES_FIJOS_DISTINTO_TAMANO; ++i) {
+            auto par = generarParFijoEquivalenteDistintoTamano(i);
+            const bool equivalente = tester.compararAFDPorIteraciones(
+                par.first.automata, par.second.automata, false);
+            ++resultado.conteo.comparaciones;
+            progreso.agregar(1);
+
+            if (!equivalente) {
+                resultado.correcto = false;
+                resultado.error = "Falso negativo en par fijo equivalente de distinto tamano: " +
+                                  std::to_string(4 + i) + " vs " + std::to_string(5 + i);
+                break;
+            }
+
+            ++resultado.conteo.equivalentes;
+            registrarDetalle(resultado.conteo, false, false, true, true);
+        }
+    }
+    */
+    // Los 20 fijos NO se mezclan con los equivalentes aleatorios, pero entre ellos
+    // se comparan TODOS contra TODOS: C(20,2)=190 comparaciones.
+    if (resultado.correcto) {
+        TesterEquivalencia tester;
+        std::vector<CasoEquivalente> fijos;
+        fijos.reserve(CANTIDAD_AUTOMATAS_FIJOS_DISTINTO_TAMANO);
+        for (std::uint32_t i = 0; i < CANTIDAD_AUTOMATAS_FIJOS_DISTINTO_TAMANO; ++i) {
+            fijos.push_back(generarCasoFijoEquivalente(i));
+        }
+
+        for (std::uint32_t i = 0; i < fijos.size() && resultado.correcto; ++i) {
+            for (std::uint32_t j = i + 1; j < fijos.size(); ++j) {
+                const auto& primero = fijos[i];
+                const auto& segundo = fijos[j];
+                const bool mismoAlfabeto = primero.alfabeto == segundo.alfabeto;
+                const bool mismoTamanoAlfabeto = primero.alfabeto.size() == segundo.alfabeto.size();
+                const bool unoContieneAlOtro = alfabetoContiene(primero.alfabeto, segundo.alfabeto) ||
+                                                alfabetoContiene(segundo.alfabeto, primero.alfabeto);
+                const bool hayAFND = primero.afnd || segundo.afnd;
+                const bool equivalente = tester.compararAFDPorIteraciones(
+                    primero.automata, segundo.automata, false);
+
+                ++resultado.conteo.comparaciones;
+                progreso.agregar(1);
+                registrarDetalle(resultado.conteo, mismoAlfabeto, mismoTamanoAlfabeto,
+                                 unoContieneAlOtro, hayAFND);
+
+                if (!equivalente) {
+                    resultado.correcto = false;
+                    resultado.error = "Falso negativo entre automatas fijos equivalentes: indices " +
+                                      std::to_string(i) + " y " + std::to_string(j) +
+                                      " (alfabetos de " + std::to_string(primero.alfabeto.size()) +
+                                      " y " + std::to_string(segundo.alfabeto.size()) + " simbolos)";
+                    break;
+                }
+
+                ++resultado.conteo.equivalentes;
+            }
+        }
     }
     return resultado;
 }
@@ -492,17 +672,25 @@ ResultadoParalelo comprobarNoEquivalentes(const ConfiguracionStress& config, Pro
                     CasoNoEquivalente segundo = generarNoEquivalente(j, config);
                     const bool mismoAlfabeto = primero.alfabeto == segundo.alfabeto;
                     const bool mismoTamanoAlfabeto = primero.tamanoAlfabeto == segundo.tamanoAlfabeto;
+                    const bool primeroContieneSegundo = alfabetoContiene(primero.alfabeto, segundo.alfabeto);
+                    const bool segundoContienePrimero = alfabetoContiene(segundo.alfabeto, primero.alfabeto);
+                    const bool unoContieneAlOtro = primeroContieneSegundo || segundoContienePrimero;
+                    const bool alfabetosIncompatibles = !mismoTamanoAlfabeto && !unoContieneAlOtro;
                     const bool hayAFND = primero.afnd || segundo.afnd;
                     ++conteo.comparaciones;
-                    registrarDetalle(conteo, mismoAlfabeto, mismoTamanoAlfabeto, hayAFND);
+                    registrarDetalle(conteo, mismoAlfabeto, mismoTamanoAlfabeto, unoContieneAlOtro, hayAFND);
                     ++pendientesProgreso;
                     if (pendientesProgreso >= 10000) {progreso.agregar(pendientesProgreso); pendientesProgreso = 0;}
 
-                    if (primero.tamanoAlfabeto != segundo.tamanoAlfabeto) {
+                    // CODIGO VIEJO: cualquier diferencia de tamano se esperaba como error.
+                    /*
+                    if (primero.tamanoAlfabeto != segundo.tamanoAlfabeto) { ... }
+                    */
+                    if (alfabetosIncompatibles) {
                         try {
                             (void)tester.compararAFDPorIteraciones(primero.automata, segundo.automata, false);
                             registrarError(detener, mutexError, error,
-                                "Se esperaba error por alfabetos de distinto tamano: indices " +
+                                "Se esperaba error por alfabetos incompatibles: indices " +
                                 std::to_string(i) + " y " + std::to_string(j));
                             break;
                         } catch (const std::invalid_argument&) {
@@ -560,6 +748,44 @@ void verificarGeneracion(const ConfiguracionStress& config) {
         if (!afd.automata.esDeterminista()) throw std::runtime_error("Se esperaba AFD en grupo equivalente");
         if (afnd.automata.esDeterminista()) throw std::runtime_error("Se esperaba AFND en grupo equivalente");
     }
+
+    // CODIGO VIEJO: se verificaban 10 pares de tamanos consecutivos.
+    /*
+    for (std::uint32_t i = 0; i < CANTIDAD_PARES_FIJOS_DISTINTO_TAMANO; ++i) {
+        auto par = generarParFijoEquivalenteDistintoTamano(i);
+        const bool primeroAFND = !par.first.automata.esDeterminista();
+        const bool segundoAFND = !par.second.automata.esDeterminista();
+        if (primeroAFND == segundoAFND) throw std::runtime_error("Cada par fijo debe tener exactamente un AFND");
+        if (par.first.alfabeto.size() + 1 != par.second.alfabeto.size()) {
+            throw std::runtime_error("Tamano incorrecto en par fijo equivalente");
+        }
+        if (!alfabetoContiene(par.second.alfabeto, par.first.alfabeto)) {
+            throw std::runtime_error("El alfabeto grande del par fijo debe contener al pequeno");
+        }
+    }
+    */
+    for (std::uint32_t tamanoIndice = 0; tamanoIndice < CANTIDAD_TAMANOS_FIJOS; ++tamanoIndice) {
+        auto afd = generarCasoFijoEquivalente(2 * tamanoIndice);
+        auto afnd = generarCasoFijoEquivalente(2 * tamanoIndice + 1);
+        const std::size_t tamanoEsperado = 4 + tamanoIndice;
+
+        if (!afd.automata.esDeterminista()) throw std::runtime_error("Se esperaba AFD fijo");
+        if (afnd.automata.esDeterminista()) throw std::runtime_error("Se esperaba AFND fijo");
+        if (afd.alfabeto != afnd.alfabeto) throw std::runtime_error("El AFD y AFND fijos del mismo tamano deben compartir alfabeto");
+        if (afd.alfabeto.size() != tamanoEsperado) throw std::runtime_error("Tamano incorrecto en automata fijo equivalente");
+    }
+
+    // Los vocabularios de 3 simbolos deben ser realmente distintos de los de 4:
+    // no alcanza con que tengan distinto tamano, porque eso ya no implica incompatibilidad.
+    const std::string alfabetos4[] = {"abcd", "efgh"};
+    const std::string alfabetos3[] = {"ijk", "lmn"};
+    for (const auto& alfabeto4 : alfabetos4) for (const auto& alfabeto3 : alfabetos3) {
+        for (char simbolo : alfabeto3) {
+            if (alfabeto4.find(simbolo) != std::string::npos) {
+                throw std::runtime_error("Los alfabetos aleatorios de 3 y 4 simbolos deben tener vocabularios distintos");
+            }
+        }
+    }
 }
 
 } // namespace
@@ -592,7 +818,11 @@ int main(int argc, char** argv) {
         const std::uint64_t totalEq = 2ULL * config.porSubgrupoEquivalente;
         const std::uint64_t mitadNoEq = 2ULL * config.porSubgrupoNoEquivalente;
 
-        const std::uint64_t esperadoEq = pares(totalEq);
+        const std::uint64_t esperadoEqAleatorios = pares(totalEq);
+        // CODIGO VIEJO: solo se hacian 10 comparaciones fijas.
+        // const std::uint64_t esperadoEqFijos = CANTIDAD_PARES_FIJOS_DISTINTO_TAMANO;
+        const std::uint64_t esperadoEqFijos = CANTIDAD_COMPARACIONES_FIJAS;
+        const std::uint64_t esperadoEq = esperadoEqAleatorios + esperadoEqFijos;
         const std::uint64_t esperadoNoEqComparables = 2ULL * pares(mitadNoEq);
         const std::uint64_t esperadoIncompatibles = mitadNoEq * mitadNoEq;
         const std::uint64_t esperadoNoEqTotal = pares(totalNoEq);
@@ -605,6 +835,8 @@ int main(int argc, char** argv) {
         esperadoDetalleNoEq.mismoAlfabetoConAFND = 4ULL * (pares(mitadSubgrupoNoEq) + mitadSubgrupoNoEq * mitadSubgrupoNoEq);
         esperadoDetalleNoEq.distintoAlfabetoSoloAFD = 2ULL * mitadSubgrupoNoEq * mitadSubgrupoNoEq;
         esperadoDetalleNoEq.distintoAlfabetoConAFND = 6ULL * mitadSubgrupoNoEq * mitadSubgrupoNoEq;
+        esperadoDetalleNoEq.distintoTamanoCompatibleSoloAFD = 0;
+        esperadoDetalleNoEq.distintoTamanoCompatibleConAFND = 0;
         esperadoDetalleNoEq.alfabetoIncompatibleSoloAFD = 4ULL * mitadSubgrupoNoEq * mitadSubgrupoNoEq;
         esperadoDetalleNoEq.alfabetoIncompatibleConAFND = 12ULL * mitadSubgrupoNoEq * mitadSubgrupoNoEq;
 
@@ -613,6 +845,12 @@ int main(int argc, char** argv) {
         esperadoDetalleEq.mismoAlfabetoConAFND = 2ULL * (pares(mitadSubgrupoEq) + mitadSubgrupoEq * mitadSubgrupoEq);
         esperadoDetalleEq.distintoAlfabetoSoloAFD = mitadSubgrupoEq * mitadSubgrupoEq;
         esperadoDetalleEq.distintoAlfabetoConAFND = 3ULL * mitadSubgrupoEq * mitadSubgrupoEq;
+        // Entre los 20 fijos hay 10 pares AFD-AFND del mismo tamano.
+        esperadoDetalleEq.mismoAlfabetoConAFND += CANTIDAD_TAMANOS_FIJOS;
+        // Entre cada par de tamanos distintos hay cuatro combinaciones:
+        // 1 AFD+AFD y 3 con al menos un AFND. C(10,2)=45 pares de tamanos.
+        esperadoDetalleEq.distintoTamanoCompatibleSoloAFD = pares(CANTIDAD_TAMANOS_FIJOS);
+        esperadoDetalleEq.distintoTamanoCompatibleConAFND = 3ULL * pares(CANTIDAD_TAMANOS_FIJOS);
 
         // CODIGO VIEJO:
         // std::cout << (smoke ? "STRESS SMOKE" : "STRESS COMPLETO 200000") << '\n';
@@ -625,23 +863,35 @@ int main(int argc, char** argv) {
         std::cout << "  efgh: " << config.porSubgrupoNoEquivalente << " ("
                   << config.porSubgrupoNoEquivalente / 2 << " AFD + "
                   << config.porSubgrupoNoEquivalente / 2 << " AFND)\n";
-        std::cout << "  abc:  " << config.porSubgrupoNoEquivalente << " ("
+        // CODIGO VIEJO: los alfabetos de 3 eran abc y def; abc quedaba contenido en abcd.
+        /*
+        std::cout << "  abc / def ...";
+        */
+        std::cout << "  ijk:  " << config.porSubgrupoNoEquivalente << " ("
                   << config.porSubgrupoNoEquivalente / 2 << " AFD + "
                   << config.porSubgrupoNoEquivalente / 2 << " AFND)\n";
-        std::cout << "  def:  " << config.porSubgrupoNoEquivalente << " ("
+        std::cout << "  lmn:  " << config.porSubgrupoNoEquivalente << " ("
                   << config.porSubgrupoNoEquivalente / 2 << " AFD + "
                   << config.porSubgrupoNoEquivalente / 2 << " AFND)\n";
-        std::cout << "  Esperados false (mismo tamano de alfabeto): " << esperadoNoEqComparables << '\n';
-        std::cout << "  Esperados error (alfabeto 4 vs 3): " << esperadoIncompatibles << '\n';
+        std::cout << "  Esperados false (comparables): " << esperadoNoEqComparables << '\n';
+        std::cout << "  Esperados error (alfabetos incompatibles): " << esperadoIncompatibles << '\n';
         std::cout << "  Pares totales del grupo: " << esperadoNoEqTotal << '\n';
-        std::cout << "Equivalentes generados: " << totalEq << '\n';
+        std::cout << "Equivalentes generados: "
+                  << (totalEq + CANTIDAD_AUTOMATAS_FIJOS_DISTINTO_TAMANO) << '\n';
         std::cout << "  abcdef: " << config.porSubgrupoEquivalente << " ("
                   << config.porSubgrupoEquivalente / 2 << " AFD + "
                   << config.porSubgrupoEquivalente / 2 << " AFND)\n";
         std::cout << "  ghijkl: " << config.porSubgrupoEquivalente << " ("
                   << config.porSubgrupoEquivalente / 2 << " AFD + "
                   << config.porSubgrupoEquivalente / 2 << " AFND)\n";
-        std::cout << "  Esperados true: " << esperadoEq << '\n';
+        // CODIGO VIEJO: los fijos eran 10 pares aislados 4<->5 ... 13<->14.
+        /*
+        std::cout << "  20 fijos: 10 pares ...";
+        */
+        std::cout << "  20 fijos: tamanos 4..13, con 1 AFD + 1 AFND por tamano; todos contra todos\n";
+        std::cout << "  Esperados true aleatorios: " << esperadoEqAleatorios << '\n';
+        std::cout << "  Esperados true entre los 20 fijos: " << esperadoEqFijos << '\n';
+        std::cout << "  Esperados true totales: " << esperadoEq << '\n';
 
         verificarGeneracion(config);
 
@@ -650,7 +900,8 @@ int main(int argc, char** argv) {
         if (!smoke) {
             std::cout << "Maximo pedido: " << maximoPedido << '\n';
             std::cout << "Maximo ajustado para reparto exacto: " << totalComparacionesEsperadas << '\n';
-            std::cout << "Automatas totales generados: " << (totalNoEq + totalEq) << '\n';
+            std::cout << "Automatas totales generados: "
+                      << (totalNoEq + totalEq + CANTIDAD_AUTOMATAS_FIJOS_DISTINTO_TAMANO) << '\n';
         }
         std::cout << "Comparaciones totales esperadas: " << totalComparacionesEsperadas << '\n';
         std::cout << "El progreso se actualiza aproximadamente cada 5 segundos.\n";
@@ -669,6 +920,8 @@ int main(int argc, char** argv) {
             noEq.conteo.detalle.mismoAlfabetoConAFND != esperadoDetalleNoEq.mismoAlfabetoConAFND ||
             noEq.conteo.detalle.distintoAlfabetoSoloAFD != esperadoDetalleNoEq.distintoAlfabetoSoloAFD ||
             noEq.conteo.detalle.distintoAlfabetoConAFND != esperadoDetalleNoEq.distintoAlfabetoConAFND ||
+            noEq.conteo.detalle.distintoTamanoCompatibleSoloAFD != esperadoDetalleNoEq.distintoTamanoCompatibleSoloAFD ||
+            noEq.conteo.detalle.distintoTamanoCompatibleConAFND != esperadoDetalleNoEq.distintoTamanoCompatibleConAFND ||
             noEq.conteo.detalle.alfabetoIncompatibleSoloAFD != esperadoDetalleNoEq.alfabetoIncompatibleSoloAFD ||
             noEq.conteo.detalle.alfabetoIncompatibleConAFND != esperadoDetalleNoEq.alfabetoIncompatibleConAFND ||
             totalDetalle(noEq.conteo.detalle) != esperadoNoEqTotal) {
@@ -687,6 +940,8 @@ int main(int argc, char** argv) {
             eq.conteo.detalle.mismoAlfabetoConAFND != esperadoDetalleEq.mismoAlfabetoConAFND ||
             eq.conteo.detalle.distintoAlfabetoSoloAFD != esperadoDetalleEq.distintoAlfabetoSoloAFD ||
             eq.conteo.detalle.distintoAlfabetoConAFND != esperadoDetalleEq.distintoAlfabetoConAFND ||
+            eq.conteo.detalle.distintoTamanoCompatibleSoloAFD != esperadoDetalleEq.distintoTamanoCompatibleSoloAFD ||
+            eq.conteo.detalle.distintoTamanoCompatibleConAFND != esperadoDetalleEq.distintoTamanoCompatibleConAFND ||
             eq.conteo.detalle.alfabetoIncompatibleSoloAFD != 0 ||
             eq.conteo.detalle.alfabetoIncompatibleConAFND != 0 ||
             totalDetalle(eq.conteo.detalle) != esperadoEq) {
@@ -717,6 +972,10 @@ int main(int argc, char** argv) {
                   << " -> distinto alfabeto, mismo tamano, y no habia AFND (AFD + AFD).\n";
         std::cout << "  " << noEq.conteo.detalle.distintoAlfabetoConAFND
                   << " -> distinto alfabeto, mismo tamano, y habia al menos un AFND.\n";
+        std::cout << "  " << noEq.conteo.detalle.distintoTamanoCompatibleSoloAFD
+                  << " -> distinto tamano, uno contenido en el otro, y no habia AFND (AFD + AFD).\n";
+        std::cout << "  " << noEq.conteo.detalle.distintoTamanoCompatibleConAFND
+                  << " -> distinto tamano, uno contenido en el otro, y habia al menos un AFND.\n";
         std::cout << "  " << noEq.conteo.detalle.alfabetoIncompatibleSoloAFD
                   << " -> alfabetos de distinto tamano y no habia AFND (error esperado).\n";
         std::cout << "  " << noEq.conteo.detalle.alfabetoIncompatibleConAFND
@@ -734,7 +993,11 @@ int main(int argc, char** argv) {
         std::cout << "  " << eq.conteo.detalle.distintoAlfabetoSoloAFD
                   << " -> distinto alfabeto y no habia AFND (AFD + AFD).\n";
         std::cout << "  " << eq.conteo.detalle.distintoAlfabetoConAFND
-                  << " -> distinto alfabeto y habia al menos un AFND.\n";
+                  << " -> distinto alfabeto, mismo tamano, y habia al menos un AFND.\n";
+        std::cout << "  " << eq.conteo.detalle.distintoTamanoCompatibleSoloAFD
+                  << " -> distinto tamano, uno contenido en el otro, y no habia AFND (AFD + AFD).\n";
+        std::cout << "  " << eq.conteo.detalle.distintoTamanoCompatibleConAFND
+                  << " -> distinto tamano, uno contenido en el otro, y habia al menos un AFND.\n";
 
         std::cout << "\nComparaciones totales verificadas: "
                   << (noEq.conteo.comparaciones + eq.conteo.comparaciones) << '\n';
